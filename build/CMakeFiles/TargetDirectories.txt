@@ -1,0 +1,3 @@
+C:/Users/annie/Documents/CppProjects/aIMinesweeper/build/CMakeFiles/aIMinesweeper.dir
+C:/Users/annie/Documents/CppProjects/aIMinesweeper/build/CMakeFiles/ALL_BUILD.dir
+C:/Users/annie/Documents/CppProjects/aIMinesweeper/build/CMakeFiles/ZERO_CHECK.dir
