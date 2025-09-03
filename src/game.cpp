@@ -6,7 +6,7 @@ using namespace std;
 using namespace CELLS_LABELS;
 
 const int GRID_SIZE = 16;
-int MINESNUM = 40;
+int MINESNUM = 100;
 int MOVES =0;
 
 vector<vector<int>> GRID(GRID_SIZE, vector<int>(GRID_SIZE, UNREVEALED));         //-2 = empty, -1 = mines, otherwise (0-5) markers for mines

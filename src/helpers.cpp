@@ -45,11 +45,17 @@ bool is_subset(const vector<pair<int,int>>& a, const vector<pair<int,int>> &b){
 
 void clean_cells(){
     for (auto it = cells.begin(); it != cells.end(); ){
+        //if count = 0 and no more moves, erase
         if (it->first ==0 && it->second.empty()){
             it = cells.erase(it);
         }
         else if (it->first == (int)it->second.size()){
-            it = cells.erase(it);
+            for (auto &p: it->second){
+                auto pos = find(mines_marked.begin(), mines_marked.end(), make_pair(p.first, p.second));
+                if (pos != mines_marked.end()){
+                    it = cells.erase(it);
+                }
+            }
         }
         else{
             ++it;

@@ -22,17 +22,22 @@ void initialize(){
     }
 }
 
-void actions(int row, int col){     //given a marker position, return all possible actions
-    vector<pair<int,int>> acts;
+void find_actions(){     //given a marker position, return all possible actions
+    for (int row = 0; row < GRID_SIZE; row++){
+        for (int col = 0; col < GRID_SIZE; col++){
+            if (grid_given[row][col] == EMPTY || grid_given[row][col] == UNREVEALED) continue;   //if its not a marker continue
+            vector<pair<int,int>> acts;
 
-    for_each_neighbour(row, col, [&](int nr, int nc){
-        auto it = pos_revealed.find({nr, nc});          //if its neighbours havent been revealed
-        if (it == pos_revealed.end() && grid_given[nr][nc] != EMPTY && grid_given[nr][nc]){
-            acts.push_back({nr, nc});
-        }                           
-    });
-    //gets all the cells that surround the marker
-    if (!acts.empty()) cells.insert({grid_given[row][col], acts});
+            for_each_neighbour(row, col, [&](int nr, int nc){
+                auto it = pos_revealed.find({nr, nc});          //if its neighbours havent been revealed
+                if (it == pos_revealed.end() && grid_given[nr][nc] != EMPTY && grid_given[nr][nc]){
+                    acts.push_back({nr, nc});
+                }                           
+            });
+            //gets all the cells that surround the marker
+            if (!acts.empty()) cells.insert({grid_given[row][col], acts});
+        }
+    }
 }
 
 void mark_and_update_mine(int row, int col){
@@ -64,15 +69,13 @@ void mark_and_update_mine(int row, int col){
 }
 
 void update_move(vector<pair<int,int>> to_remove){
-    if (!to_remove.empty()){            //remove the move i just made
-        for (auto &entry: cells){
-            auto &vec = entry.second;
-            for (auto &mv: to_remove){
-                vec.erase(
-                    remove(vec.begin(), vec.end(), mv), vec.end()
-                );
-        }
-        }
+    for (auto &entry: cells){
+        auto &vec = entry.second;
+        for (auto &mv: to_remove){
+            vec.erase(
+                remove(vec.begin(), vec.end(), mv), vec.end()
+            );
+    }
     }
 }
 //finds a safe move to move
@@ -169,10 +172,9 @@ void apply_logic(){
 void solve(){
     if (count_mines() < MINESNUM){
         //finds all possible actions when given the revealed positions
-        for (auto &p: pos_revealed){
-            actions(p.first.first, p.first.second);
-        }
-  
+        //clean_cells();
+
+        find_actions();
         find_moves();
 
         if (!move_made) apply_logic();
@@ -181,7 +183,7 @@ void solve(){
             cout <<"No more moves, making random move..."<<endl;
             make_random_move();
         }
-        clean_cells();
+ 
     }
     for (auto &p: pos_revealed){
         grid_given[p.first.first][p.first.second] = GRID[p.first.first][p.first.second];
