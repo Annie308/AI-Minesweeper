@@ -8,6 +8,7 @@
 #include <map>
 #include <stack>
 #include <SFML/Graphics.hpp>
+#include <functional>
 
 namespace CELLS_LABELS{
     const int UNREVEALED = -2;
@@ -21,6 +22,6 @@ extern const int GRID_SIZE;
 extern int MINESNUM;
 extern bool RUNNING;
 extern int MOVES;
-extern std::multimap<int, std::vector<std::pair<int,int>>> cells;  
+extern std::multimap<int, std::vector<std::pair<int,int>>> CELLS;  
 extern bool GAMEOVER;
 extern std::mt19937 rng;

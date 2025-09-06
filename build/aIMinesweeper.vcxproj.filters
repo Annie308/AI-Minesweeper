@@ -16,6 +16,9 @@
     <ClCompile Include="C:\Users\annie\Documents\CppProjects\aIMinesweeper\src\helpers.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="C:\Users\annie\Documents\CppProjects\aIMinesweeper\src\simulation.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="C:\Users\annie\Documents\CppProjects\aIMinesweeper\CMakeLists.txt" />

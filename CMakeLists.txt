@@ -11,7 +11,7 @@ set(CMAKE_PREFIX_PATH "C:/Users/annie/Documents/vcpkg/installed/x64-windows")
 # Find SFML using vcpkg-style CONFIG mode
 find_package(SFML COMPONENTS Network Graphics Window Audio System CONFIG REQUIRED)
 
-add_executable(aIMinesweeper src/main.cpp src/game.cpp src/render.cpp src/solver.cpp src/helpers.cpp)
+add_executable(aIMinesweeper src/main.cpp src/game.cpp src/render.cpp src/solver.cpp src/helpers.cpp src/simulation.cpp)
 
 # Include directories
 target_include_directories(aIMinesweeper PRIVATE include)

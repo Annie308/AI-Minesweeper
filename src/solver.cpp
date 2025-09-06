@@ -2,6 +2,7 @@
 #include "global.h"
 #include "helpers.h"
 #include "render.h"
+#include "simulation.h"
 
 using namespace std;
 using namespace CELLS_LABELS;
@@ -9,7 +10,7 @@ using namespace CELLS_LABELS;
 //when given an empty minesweeper grid and the revealed positions after the initial blast, the ai should be able to solve
 //after every safe move, upudate the grid and also add new revealed markers to pos_revealed
 
-multimap<int, vector<pair<int,int>>> cells;  
+multimap<int, vector<pair<int,int>>> CELLS;  
 map<pair<int,int>, bool> safe;
 vector<vector<int>> grid_given(GRID_SIZE, vector<int>(GRID_SIZE, UNREVEALED));
 vector<pair<int,int>> mine_cords;
@@ -22,40 +23,47 @@ void initialize(){
     }
 }
 
-void find_actions(){     //given a marker position, return all possible actions
+void find_actions(){     //return all possible actions for each frontier cell
     for (int row = 0; row < GRID_SIZE; row++){
         for (int col = 0; col < GRID_SIZE; col++){
-            if (grid_given[row][col] == EMPTY || grid_given[row][col] == UNREVEALED) continue;   //if its not a marker continue
+            if (grid_given[row][col] <= 0) continue;   //if its not a marker continue
             vector<pair<int,int>> acts;
 
             for_each_neighbour(row, col, [&](int nr, int nc){
-                auto it = pos_revealed.find({nr, nc});          //if its neighbours havent been revealed
-                if (it == pos_revealed.end() && grid_given[nr][nc] != EMPTY && grid_given[nr][nc]){
+                auto it = pos_revealed.find({nr,nc});
+                if (it == pos_revealed.end() && grid_given[nr][nc] != EMPTY){
                     acts.push_back({nr, nc});
                 }                           
             });
             //gets all the cells that surround the marker
-            if (!acts.empty()) cells.insert({grid_given[row][col], acts});
+            if (!acts.empty()) CELLS.insert({grid_given[row][col], acts});
         }
     }
 }
 
-void mark_and_update_mine(int row, int col){
-    grid_given[row][col] = MINE;          //mark as mine
-    mines_marked.push_back({row,col});
+void mark_and_update_mine(pair<int,int> pos, multimap<int, vector<pair<int,int>>> &state, bool simulate){
+    auto [row,col] = pos;
+
+    if (!simulate) {
+        grid_given[row][col] = MINE;          //mark as mine if not simulating
+        mines_marked.push_back({row,col});
+    }
+
     vector<pair<int, vector<pair<int,int>>>> to_add;
 
     //find every instance of the mine erase the move
     //since row, col is a mine, we must also decrease the mine count
-    for (auto itr = cells.begin(); itr != cells.end();){
+    for (auto itr = state.begin(); itr != state.end();){
         auto &vec = itr->second;
         auto pos = find(vec.begin(), vec.end(), make_pair(row,col));
-        if (pos != vec.end()){
+
+        if (pos != vec.end() && itr->first > 0){   //if found
             auto new_vec = vec;
             new_vec.erase(remove(new_vec.begin(), new_vec.end(), make_pair(row,col)), new_vec.end());
+
             int new_key = itr->first-1;
             to_add.push_back({new_key, new_vec});
-            itr = cells.erase(itr);
+            itr = state.erase(itr);
         }
         else{
             ++itr;  //continue the loop
@@ -63,13 +71,13 @@ void mark_and_update_mine(int row, int col){
     }
     for (auto vec: to_add){
         if (!vec.second.empty()){
-        cells.emplace(vec);
+        state.emplace(vec);
         }
     }
 }
 
-void update_move(vector<pair<int,int>> to_remove){
-    for (auto &entry: cells){
+void update_move(vector<pair<int,int>> to_remove, multimap<int, vector<pair<int,int>>> &state){
+    for (auto &entry: state){
         auto &vec = entry.second;
         for (auto &mv: to_remove){
             vec.erase(
@@ -79,30 +87,31 @@ void update_move(vector<pair<int,int>> to_remove){
     }
 }
 //finds a safe move to move
-void find_moves(){
+void find_moves(multimap<int, vector<pair<int,int>>> &state, bool simulate){
     vector<pair<int,int>> to_remove;
     vector<pair<int,int>> mine_pos;
     move_made = false;
 
-    auto range = cells.equal_range(0);
-    for (auto itr = cells.begin(); itr!= cells.end(); itr++){
+    auto range = state.equal_range(0);
+    for (auto itr = state.begin(); itr!= state.end(); itr++){
         for (auto &p: itr->second){
             auto [row,col] = p;
-            if (itr->first == (int)itr->second.size()){
+            if (itr->first == (int)itr->second.size() && itr->first > 0){
                 mine_pos.push_back({row, col}); 
             }
             if (itr->first==0){
-                make_move(row, col);
+                if (!simulate) make_move(row, col);
                 to_remove.push_back({row, col});
                 move_made = true;
             }
         }
     }
 
-    update_move(to_remove);
+    update_move(to_remove, state);
 
     for (auto &p: mine_pos){
-        mark_and_update_mine(p.first, p.second);
+        if (simulate) mark_and_update_mine(p, state, true);
+        else mark_and_update_mine(p, state, false);
     }
 }
 
@@ -132,7 +141,7 @@ void apply_logic(){
     vector<pair<int, vector<pair<int,int>>>> to_add;
     stack<pair<int, vector<pair<int,int>>>> cpy_cells;
     
-    for (auto it = cells.begin(); it!= cells.end(); it++){
+    for (auto it = CELLS.begin(); it!= CELLS.end(); it++){
         cpy_cells.push(make_pair(it->first, it->second));
     }
 
@@ -142,13 +151,14 @@ void apply_logic(){
 
         cpy_cells.pop();
 
-        for (auto it = cells.begin(); it!= cells.end(); ){
+        for (auto it = CELLS.begin(); it!= CELLS.end();){
             int b_count = it->first;
+
             vector<pair<int,int>> b = it->second;
             vector<pair<int,int>> diff;
             int new_count = b_count - a_count;
 
-            if (is_subset(a,b) && it->second.size() != a.size() && it->first > 0){
+            if (is_subset(a,b) && it->second.size() != a.size() && new_count >=0){   
                 for (auto &p: b){  //push back what you cant find
                     if (find(a.begin(), a.end(), p) ==a.end()){
                         diff.push_back(p);
@@ -157,7 +167,7 @@ void apply_logic(){
 
                 if (!diff.empty()){to_add.emplace_back(make_pair(new_count, diff)); }
 
-                it = cells.erase(it);
+                it = CELLS.erase(it);
             }else{
                 ++it;
             }   
@@ -165,30 +175,32 @@ void apply_logic(){
     }
     //add all the new entries
     for (auto &s: to_add){
-        cells.emplace(s.first, move(s.second));
+        CELLS.emplace(s.first, move(s.second));
     }
 }
 
 void solve(){
     if (count_mines() < MINESNUM){
         //finds all possible actions when given the revealed positions
-        //clean_cells();
 
         find_actions();
-        find_moves();
+        find_moves(CELLS, false);
 
         if (!move_made) apply_logic();
 
-        if (no_moves_left()){
-            cout <<"No more moves, making random move..."<<endl;
-            make_random_move();
+        //printCells(CELLS);
+
+        if (no_moves_left(CELLS)){
+            cout <<"No more moves, analyzing..."<<endl;
+            run_simulation();
         }
  
     }
+    //update newly revealed positions
     for (auto &p: pos_revealed){
         grid_given[p.first.first][p.first.second] = GRID[p.first.first][p.first.second];
     }
-
+    //check win condition
     if (count_mines() == MINESNUM){
         RUNNING = false;
         GAMEOVER = true;

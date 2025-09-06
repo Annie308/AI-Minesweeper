@@ -16,8 +16,8 @@ int count_mines(){
     return mines_count;
 }
 
-bool no_moves_left(){
-    for (auto const &entry: cells){
+bool no_moves_left(multimap<int, vector<pair<int,int>>> const state){
+    for (auto const &entry: state){
         int count = entry.first;
         int size  = (int)entry.second.size(); 
         if (count == size){
@@ -44,18 +44,10 @@ bool is_subset(const vector<pair<int,int>>& a, const vector<pair<int,int>> &b){
 }
 
 void clean_cells(){
-    for (auto it = cells.begin(); it != cells.end(); ){
+    for (auto it = CELLS.begin(); it != CELLS.end(); ){
         //if count = 0 and no more moves, erase
         if (it->first ==0 && it->second.empty()){
-            it = cells.erase(it);
-        }
-        else if (it->first == (int)it->second.size()){
-            for (auto &p: it->second){
-                auto pos = find(mines_marked.begin(), mines_marked.end(), make_pair(p.first, p.second));
-                if (pos != mines_marked.end()){
-                    it = cells.erase(it);
-                }
-            }
+            it = CELLS.erase(it);
         }
         else{
             ++it;
@@ -63,9 +55,9 @@ void clean_cells(){
     }
 }
 
-void printCells(){
+void printCells(multimap<int, vector<pair<int,int>>> const state){
     cout <<"Cells: \n";
-    for (auto &entry: cells){
+    for (auto &entry: state){
         cout << entry.first <<": ";
         for (auto &p: entry.second){
             cout << "("<<p.first<<","<<p.second<<") ";

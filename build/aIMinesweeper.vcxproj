@@ -390,6 +390,7 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     <ClCompile Include="C:\Users\annie\Documents\CppProjects\aIMinesweeper\src\render.cpp" />
     <ClCompile Include="C:\Users\annie\Documents\CppProjects\aIMinesweeper\src\solver.cpp" />
     <ClCompile Include="C:\Users\annie\Documents\CppProjects\aIMinesweeper\src\helpers.cpp" />
+    <ClCompile Include="C:\Users\annie\Documents\CppProjects\aIMinesweeper\src\simulation.cpp" />
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>

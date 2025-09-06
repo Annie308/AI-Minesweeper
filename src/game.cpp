@@ -5,8 +5,8 @@
 using namespace std;
 using namespace CELLS_LABELS;
 
-const int GRID_SIZE = 16;
-int MINESNUM = 100;
+const int GRID_SIZE = 9;
+int MINESNUM = 20;
 int MOVES =0;
 
 vector<vector<int>> GRID(GRID_SIZE, vector<int>(GRID_SIZE, UNREVEALED));         //-2 = empty, -1 = mines, otherwise (0-5) markers for mines
@@ -105,6 +105,12 @@ void initGame(int x, int y){
     place_mines();
     cleanUp();
     find_visible_cells();
+    for (int i=0; i< GRID_SIZE; i++){
+        for (int j=0; j< GRID_SIZE; j++){
+            cout << GRID[i][j] <<" ";
+        }
+        cout << endl;
+    }
 }
 
 //allows the ai to make a move and update the grid
