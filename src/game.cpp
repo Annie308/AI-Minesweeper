@@ -3,13 +3,14 @@
 #include "game.h"
 
 using namespace std;
-using namespace CELLS_LABELS;
+using namespace CELL_LABELS;
 
-const int GRID_SIZE = 9;
-int MINESNUM = 20;
+const int GRID_SIZE = 20;
+int MINESNUM = 100;
 int MOVES =0;
 
 vector<vector<int>> GRID(GRID_SIZE, vector<int>(GRID_SIZE, UNREVEALED));         //-2 = empty, -1 = mines, otherwise (0-5) markers for mines
+vector<vector<int>> GRID_GIVEN(GRID_SIZE, vector<int>(GRID_SIZE, UNREVEALED));
 deque<pair<int,int>> blast_pos;
 map<pair<int,int>, int> pos_revealed;                        //positions that the ai can see
 uniform_int_distribution<int> dist(0,GRID_SIZE-1); 
@@ -118,7 +119,7 @@ void make_move(int row, int col){
     if (row >=0 &&row <GRID_SIZE && col >=0 && col < GRID_SIZE){
         if (GRID[row][col] == MINE){
             cout <<"GAME OVER! YOU LOST! ";
-            grid_given[row][col] = EXPLODED;
+            GRID_GIVEN[row][col] = EXPLODED;
             RUNNING = false;
             GAMEOVER = true;
         }
@@ -130,10 +131,9 @@ void make_move(int row, int col){
                 find_visible_cells();
             }   
             pos_revealed[{row,col}] = GRID[row][col];
-            grid_given[row][col] = GRID[row][col];
+            GRID_GIVEN[row][col] = GRID[row][col];
         }
     }
     MOVES++;
     return;
 }
-

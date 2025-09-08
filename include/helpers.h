@@ -21,8 +21,8 @@ void for_each_neighbour(int row, int col, Func func){
 }
 
 void printCells(std::multimap<int, std::vector<std::pair<int,int>>> const state);
-
 int count_mines();
 bool no_moves_left(std::multimap<int, std::vector<std::pair<int,int>>> const state);
 void clean_cells();
+void printGridGiven();
 

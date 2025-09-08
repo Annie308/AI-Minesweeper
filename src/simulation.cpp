@@ -3,7 +3,9 @@
 #include "solver.h"
 
 using namespace std;
-using namespace CELLS_LABELS;
+using namespace CELL_LABELS;
+
+vector<vector<double>> PROB_GRID(GRID_SIZE, vector<double>(GRID_SIZE, -1));  //stores the probability of each cell being a mine
 
 //when given an init sate, return the resuling state
 struct Node{
@@ -17,7 +19,7 @@ struct Node{
 //make a functor to compare nodes based on layer. Make into min heap by layer
 struct NodeCmp{
     bool operator()(Node* a, Node* b) {
-        return a->layer < b->layer;             //a has more priority if it is smaller
+        return a->layer > b->layer;             //a has less priority if it is bigger - min heap
     }
 }; 
 
@@ -46,13 +48,16 @@ vector<pair<int,int>> find_frontier(multimap<int, vector<pair<int,int>>> state){
     for (auto entry: state){
         if (entry.first < entry.second.size() && entry.first > 0){         //if we can't determine a move (ex. 1 = {(1,1), (2,1), (3,1)})
             for (auto p: entry.second){
-                auto it = find(mines_marked.begin(), mines_marked.end(), make_pair(p.first, p.second));
-                if (it == mines_marked.end() && grid_given[p.first][p.second] != MINE){   //if not already marked
+                if (GRID_GIVEN[p.first][p.second] != MINE){   //if not already marked
                     frontier.push_back(make_pair(p.first,p.second));
                 }
             }
         }
     }
+    sort(frontier.begin(), frontier.end());
+    auto last_unique = unique(frontier.begin(), frontier.end());
+    frontier.erase(last_unique, frontier.end());
+
     return frontier;
 }
 
@@ -65,32 +70,11 @@ bool is_valid(multimap<int, vector<pair<int,int>>> state){
     return true;
 }
 
-bool game_over(multimap<int, vector<pair<int,int>>> state){
-    int mines_found =0;
-    for (auto entry: state){
-        if (entry.first ==0 && entry.second.empty()) continue;          //if empty, continue
-        if (entry.first ==0 && !entry.second.empty()) return false;   //if there are still safe moves, not over
-
-        if (entry.first == entry.second.size() && entry.first >0){     //if all the cells are mines
-            for (auto &p: entry.second){
-                auto it = find(mines_marked.begin(), mines_marked.end(), make_pair(p.first, p.second));
-                if (it == mines_marked.end()){   ///if not already marked
-                    mines_found += entry.first;
-                }
-            }
-        }
-    }
-    //if (mines_found + count_mines() < MINESNUM) return false;   //if not all mines found
-    return true;
-}
-
 //when given a pos on the frontier, search to find probability of mine by expanding
-void simulate(pair<int,int> cords){
-    //stores all the nodes for branching. Min heap using BFS
-    int valid_mine =0;
-    int valid_safe =0;
+void tree_sim(pair<int,int> cords, int &valid_mine, int &valid_safe, int depth){
 
     for (int assume_mine = 0; assume_mine <=1; assume_mine++){
+        //stores all the states to explore. Min heap by layer
         priority_queue<Node*, vector<Node*>, NodeCmp> cell_states;
 
         Node* root = create_node(CELLS);
@@ -108,13 +92,12 @@ void simulate(pair<int,int> cords){
             pair<int,int> curr_pos = curr_node->pos;
             bool is_mine = curr_node->mine;
 
-            if (curr_node->layer > 3){
-                //cout <<"Depth reached: "<<curr_node->layer<<" . Aborting..."<<endl;
+            if (curr_node->layer > depth){
                 continue;
             }
 
             //changes the curr_state to what happens when we assume the pos is a mine or safe
-            if (is_mine) mark_and_update_mine(curr_pos, curr_state, true);
+            if (is_mine) update_mine(curr_pos, curr_state, true);
             else update_move({curr_pos}, curr_state);
 
             while (!no_moves_left(curr_state)){
@@ -126,7 +109,6 @@ void simulate(pair<int,int> cords){
             }
 
             //printCells(curr_state);
-
             vector<pair<int,int>> frontier = find_frontier(curr_state);
 
             if (frontier.empty()){
@@ -144,36 +126,66 @@ void simulate(pair<int,int> cords){
 
                     cell_states.push(n);
                     curr_node->next.push_back(n);
-                    //cout <<"Expanding to ("<<p.first<<","<<p.second<<") at layer "<<n->layer<<endl;
                 }
             }
-
         }
 
         clear_node(root);
         root = nullptr;
     }
-    int total = valid_mine + valid_safe;
-    double prob = (double)valid_mine / total;
-
-    cout <<"valid mine: "<<valid_mine<<", valid safe: " << valid_safe<<"total count: "<<total<<", prob: "<<prob<<endl;
 }
+
+
+void monte_carlo_sim(multimap<int, vector<pair<int,int>>> state, pair<int,int> pos, bool assume_mine, int &valid_mine, int &valid_safe, int k){ 
+    k--;
+    if (k <= 0) return;
+
+    if (assume_mine) update_mine(pos, state, true);
+    else update_move({pos}, state);
+
+    while (!no_moves_left(state)){
+        find_moves(state, true);
+    }
+
+    if (!is_valid(state)) return;
+
+    vector<pair<int,int>> frontier = find_frontier(state);
+
+    if (frontier.empty()){
+        if (assume_mine) valid_mine++;
+        else valid_safe++;
+        return;
+    }
+    else{
+        shuffle(frontier.begin(), frontier.end(), rng); 
+        for (int i=0; i< min(1, (int)frontier.size()); i++){     //expand only 2 random cells
+            monte_carlo_sim(state, frontier[i], true, valid_mine, valid_safe,k);
+            monte_carlo_sim(state, frontier[i], false, valid_mine, valid_safe,k);
+        }
+    }
+}
+
 
 void run_simulation(){
     vector<pair<int,int>> frontier = find_frontier(CELLS);
     for (auto &p: frontier){
+        int valid_mine =0;
+        int valid_safe =0;
+
         cout <<"Simulating for ("<<p.first<<","<<p.second<<")"<<endl;
-        cout <<grid_given[p.first][p.second]<<endl;
-        simulate(p);
 
-        /* map<double, pair<int,int>> likely_mines = simulate(p);
-
-        for (auto it = likely_mines.rbegin(); it != likely_mines.rend(); ++it) {
-            // iterates largest key → smallest key
-            cout << "Probability of (" << it->second.first << "," << it->second.second << ") being a mine: " << it->first * 100 << "%" << endl;
+        if (frontier.size() <=12) {
+            int depth = 15;
+            tree_sim(p, valid_mine, valid_safe, depth);
+        }else {
+            int k = 5000/(log(frontier.size())*log(frontier.size()));       //number of simulations depends on frontier size
+            cout <<"Num of simulations: "<<k<<endl;
+            monte_carlo_sim(CELLS, p, true, valid_mine, valid_safe, k);
+            monte_carlo_sim(CELLS, p, false, valid_mine, valid_safe, k);
         }
 
-        pair<int,int> best_guess = likely_mines.rbegin()->second; 
-        //mark_and_update_mine(best_guess, CELLS, false); */
+        double prob_mine = (double)valid_mine / (valid_mine + valid_safe);
+        cout <<"Probability of ("<<p.first<<","<<p.second<<") being a mine: "<< prob_mine * 100 << "%" <<endl;
+        PROB_GRID[p.first][p.second] = prob_mine;
     }
 }

@@ -3,7 +3,7 @@
 #include "solver.h"
 
 using namespace std;
-using namespace CELLS_LABELS;
+using namespace CELL_LABELS;
 
 const int SCREEN_HEIGHT = 1200;
 const int SCREEN_WIDTH = 1200;
@@ -42,6 +42,7 @@ public:
         text.setFillColor(sf::Color::White);
         shape.setFillColor(sf::Color::Black);
     }
+
     void setString(string c){
         text.setString(c);
     }
@@ -74,22 +75,30 @@ vector<Tile> tiles;
 void render_grid(){
     for (int i=0; i< GRID_SIZE; i++){
         for (int j=0; j<GRID_SIZE; j++){
-            auto it = pos_revealed.find({i,j});
-            if (it != pos_revealed.end()){          //display if it has been revealed
-                string content = (GRID[i][j] ==EMPTY ) ? " ": to_string(GRID[i][j]);
-                tiles[i*GRID_SIZE+j].setString(content);
+            if (GRID_GIVEN[i][j] == EMPTY){
+                tiles[i*GRID_SIZE+j].setString("");
                 tiles[i*GRID_SIZE+j].reveal();
             }
-            else if (it != pos_revealed.end()){
-                tiles[i*GRID_SIZE+j].setString(" ");
+            if (is_marker(GRID_GIVEN[i][j])){
+                tiles[i*GRID_SIZE+j].reveal();
+                string content = to_string(GRID_GIVEN[i][j]);
+                tiles[i*GRID_SIZE+j].setString(content);
             }
-            if (grid_given[i][j] == EXPLODED){
+
+            if (GRID_GIVEN[i][j] == EXPLODED){
                 tiles[i*GRID_SIZE+j].explode();
             }
-            auto pos = find(mines_marked.begin(), mines_marked.end(), make_pair(i,j));
-            if (pos != mines_marked.end()){
+            if (GRID_GIVEN[i][j] == MINE){
                 tiles[i*GRID_SIZE+j].flag();
             } 
+        }
+    }
+    for (int i=0; i< GRID_SIZE; i++){
+        for (int j=0; j<GRID_SIZE; j++){
+            if (PROB_GRID[i][j] >=0){
+                string content = to_string((int)(PROB_GRID[i][j]*100)) + "%";
+                tiles[i*GRID_SIZE+j].setString(content);
+            }
         }
     }
 

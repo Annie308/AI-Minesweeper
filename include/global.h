@@ -10,15 +10,21 @@
 #include <SFML/Graphics.hpp>
 #include <functional>
 
-namespace CELLS_LABELS{
+namespace CELL_LABELS{
     const int UNREVEALED = -2;
     const int MINE = -1;
     const int EXPLODED = -3;
     const int EMPTY = 0;
+
+    inline bool is_marker(int label){
+        return label > 0;
+    }
 }
 
-extern std::vector<std::vector<int>> GRID;
 extern const int GRID_SIZE;
+extern std::vector<std::vector<int>> GRID;
+extern std::vector<std::vector<int>> GRID_GIVEN;
+extern std::vector<std::vector<double>> PROB_GRID; 
 extern int MINESNUM;
 extern bool RUNNING;
 extern int MOVES;
