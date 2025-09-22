@@ -84,21 +84,16 @@ void render_grid(){
                 string content = to_string(GRID_GIVEN[i][j]);
                 tiles[i*GRID_SIZE+j].setString(content);
             }
-
-            if (GRID_GIVEN[i][j] == EXPLODED){
-                tiles[i*GRID_SIZE+j].explode();
-            }
-            if (GRID_GIVEN[i][j] == MINE){
-                tiles[i*GRID_SIZE+j].flag();
-            } 
-        }
-    }
-    for (int i=0; i< GRID_SIZE; i++){
-        for (int j=0; j<GRID_SIZE; j++){
-            if (PROB_GRID[i][j] >=0){
-                string content = to_string((int)(PROB_GRID[i][j]*100)) + "%";
+            auto it = PROB_MAP.find({i,j});
+            if (it != PROB_MAP.end()){
+                string content = to_string((int)(PROB_MAP[{i,j}]*100)) + "%";
                 tiles[i*GRID_SIZE+j].setString(content);
             }
+
+            if (GRID_GIVEN[i][j] == EXPLODED) tiles[i*GRID_SIZE+j].explode();
+            if (GRID_GIVEN[i][j] == MINE) tiles[i*GRID_SIZE+j].flag();
+
+   
         }
     }
 

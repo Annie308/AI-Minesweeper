@@ -5,8 +5,8 @@
 using namespace std;
 using namespace CELL_LABELS;
 
-const int GRID_SIZE = 20;
-int MINESNUM = 100;
+const int GRID_SIZE = 16;
+int MINESNUM = 60;
 int MOVES =0;
 
 vector<vector<int>> GRID(GRID_SIZE, vector<int>(GRID_SIZE, UNREVEALED));         //-2 = empty, -1 = mines, otherwise (0-5) markers for mines
@@ -18,7 +18,7 @@ uniform_int_distribution<int> dist(0,GRID_SIZE-1);
 //when given blasting centre, blast using bfs
 void blast(int row, int col){
     blast_pos.push_back({row, col});
-    uniform_int_distribution<int> dist(GRID_SIZE*2, GRID_SIZE*3);  //randomise blast count and limit blast area
+    uniform_int_distribution<int> dist(GRID_SIZE, GRID_SIZE*2);  //randomise blast count and limit blast area
     int blast_count = dist(rng);                                                 
 
     while (!blast_pos.empty() && blast_count >0){
@@ -93,7 +93,7 @@ stack<pair<int,int>> find_empty_cells(){
     stack<pair<int,int>> empty_cords;     //stores the empty cords for cleanup
     for (int i=0; i< GRID_SIZE; i++){
         for (int j=0; j< GRID_SIZE; j++){
-            if (GRID[i][j] == EMPTY){
+            if (GRID[i][j] == UNREVEALED){
                 empty_cords.push({i,j});
             }
         }
@@ -135,5 +135,4 @@ void make_move(int row, int col){
         }
     }
     MOVES++;
-    return;
 }

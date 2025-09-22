@@ -1,5 +1,6 @@
 #include "global.h"
 #include "solver.h"
+#include "game.h"
 
 using namespace std;
 using namespace CELL_LABELS;
@@ -16,25 +17,33 @@ int count_mines(){
     return mines_count;
 }
 
-bool no_moves_left(multimap<int, vector<pair<int,int>>> const state){
-    for (auto const &entry: state){
+bool no_moves_left(multimap<int, vector<pair<int,int>>> state) {
+    for (auto const &entry : state) {
         int count = entry.first;
-        int size  = (int)entry.second.size(); 
-        if (count == size && size >0){
-            for (auto p: entry.second){
-                auto it = find(mines_marked.begin(), mines_marked.end(), p);
-                if (it == mines_marked.end()){      //there are still moves if you didn't mark it yet
-                    return false;
+        int size  = (int)entry.second.size();
+        if (size == 0) continue;
+
+        // Case 1: all cells are mines
+        if (count == size) {
+            for (auto const& p : entry.second) {
+                if (find(mines_marked.begin(), mines_marked.end(), p) == mines_marked.end()) {
+                    return false; 
                 }
             }
         }
 
-        if (count ==0 && size > 0){
-            return false;
+        // Case 2: all cells are safe
+        if (count == 0) {
+            for (auto const& p : entry.second) {
+                if (pos_revealed.find(p) == pos_revealed.end()) {
+                    return false; 
+                }
+            }
         }
     }
-    return true;
+    return true; 
 }
+
 
 //find if a is a subset of b
 bool is_subset(const vector<pair<int,int>>& a, const vector<pair<int,int>> &b){
@@ -42,28 +51,6 @@ bool is_subset(const vector<pair<int,int>>& a, const vector<pair<int,int>> &b){
         if (find(b.begin(), b.end(), p) == b.end()) return false;
     }
     return true;
-}
-
-void clean_cells(){
-    for (auto it = CELLS.begin(); it != CELLS.end(); ){
-        //if count = 0 and no more moves, erase
-        if (it->first ==0 && it->second.empty()){
-            it = CELLS.erase(it);
-        }
-        else{
-            ++it;
-        }
-    }
-    for (auto &entry: CELLS){
-        auto &vec = entry.second;
-        for (auto &mv: mines_marked){
-            auto it = find(vec.begin(), vec.end(), mv);
-            
-            if (it != vec.end()){
-                vec.erase(remove(vec.begin(), vec.end(), mv), vec.end());
-            }
-        }
-    }
 }
 
 void printCells(multimap<int, vector<pair<int,int>>> const state){

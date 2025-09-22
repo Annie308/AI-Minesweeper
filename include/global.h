@@ -31,3 +31,4 @@ extern int MOVES;
 extern std::multimap<int, std::vector<std::pair<int,int>>> CELLS;  
 extern bool GAMEOVER;
 extern std::mt19937 rng;
+extern std::map<std::pair<int,int>, double> PROB_MAP;

@@ -5,7 +5,8 @@
 using namespace std;
 using namespace CELL_LABELS;
 
-vector<vector<double>> PROB_GRID(GRID_SIZE, vector<double>(GRID_SIZE, -1));  //stores the probability of each cell being a mine
+//stores the probability of each cell being a mine
+map<pair<int,int>, double> PROB_MAP;
 
 //when given an init sate, return the resuling state
 struct Node{
@@ -135,15 +136,21 @@ void tree_sim(pair<int,int> cords, int &valid_mine, int &valid_safe, int depth){
     }
 }
 
-
-void monte_carlo_sim(multimap<int, vector<pair<int,int>>> state, pair<int,int> pos, bool assume_mine, int &valid_mine, int &valid_safe, int k){ 
+void monte_carlo_sim(multimap<int, vector<pair<int,int>>> state,
+                     pair<int,int> pos,
+                     bool assume_mine,
+                     int &valid_mine,
+                     int &valid_safe,
+                     int k)
+{
     k--;
     if (k <= 0) return;
 
     if (assume_mine) update_mine(pos, state, true);
     else update_move({pos}, state);
 
-    while (!no_moves_left(state)){
+    // Expand deterministically until no forced moves left
+    while (!no_moves_left(state)) {
         find_moves(state, true);
     }
 
@@ -151,41 +158,61 @@ void monte_carlo_sim(multimap<int, vector<pair<int,int>>> state, pair<int,int> p
 
     vector<pair<int,int>> frontier = find_frontier(state);
 
-    if (frontier.empty()){
+    // Terminal condition: no frontier left
+    if (frontier.empty()) {
         if (assume_mine) valid_mine++;
         else valid_safe++;
         return;
     }
-    else{
-        shuffle(frontier.begin(), frontier.end(), rng); 
-        for (int i=0; i< min(1, (int)frontier.size()); i++){     //expand only 2 random cells
-            monte_carlo_sim(state, frontier[i], true, valid_mine, valid_safe,k);
-            monte_carlo_sim(state, frontier[i], false, valid_mine, valid_safe,k);
-        }
-    }
+
+    // Pick a random frontier cell to expand
+    shuffle(frontier.begin(), frontier.end(), rng);
+    pair<int,int> next = frontier[0];
+
+    // Randomly assume mine or safe (50/50 choice)
+    bool next_is_mine = (uniform_int_distribution<int>(0,1)(rng) == 1);
+    monte_carlo_sim(state, next, next_is_mine, valid_mine, valid_safe, k);
 }
 
 
+
 void run_simulation(){
-    vector<pair<int,int>> frontier = find_frontier(CELLS);
-    for (auto &p: frontier){
-        int valid_mine =0;
-        int valid_safe =0;
+   vector<pair<int,int>> frontier = find_frontier(CELLS);
+PROB_MAP.clear();
 
-        cout <<"Simulating for ("<<p.first<<","<<p.second<<")"<<endl;
+for (auto &p : frontier) {
+    int valid_mine = 0;
+    int valid_safe = 0;
 
-        if (frontier.size() <=12) {
-            int depth = 15;
-            tree_sim(p, valid_mine, valid_safe, depth);
-        }else {
-            int k = 5000/(log(frontier.size())*log(frontier.size()));       //number of simulations depends on frontier size
-            cout <<"Num of simulations: "<<k<<endl;
-            monte_carlo_sim(CELLS, p, true, valid_mine, valid_safe, k);
-            monte_carlo_sim(CELLS, p, false, valid_mine, valid_safe, k);
+    cout << "Simulating for (" << p.first << "," << p.second << ")" << endl;
+
+    if (frontier.size() <= 12) {
+        // Small frontier → do exact tree search
+        int depth = 15;
+        tree_sim(p, valid_mine, valid_safe, depth);
+    } else {
+        int num_runs = max(50, 3000 / (int)pow(log(max(2, (int)frontier.size())), 3));
+        int depth = 25; 
+        cout << "Num of simulations: " << num_runs << endl;
+
+        // Run multiple random rollouts
+        uniform_int_distribution<int> dist(0, 1);
+
+        for (int i = 0; i < num_runs; i++) {
+            bool assume_mine = (dist(rng) == 1);
+            monte_carlo_sim(CELLS, p, assume_mine, valid_mine, valid_safe, depth);
         }
-
-        double prob_mine = (double)valid_mine / (valid_mine + valid_safe);
-        cout <<"Probability of ("<<p.first<<","<<p.second<<") being a mine: "<< prob_mine * 100 << "%" <<endl;
-        PROB_GRID[p.first][p.second] = prob_mine;
     }
+
+    double prob_mine = 0.0;
+    if (valid_mine + valid_safe > 0) {
+        prob_mine = (double)valid_mine / (valid_mine + valid_safe);
+    }
+
+    cout << "Probability of (" << p.first << "," << p.second 
+         << ") being a mine: " << prob_mine * 100 << "%" << endl;
+
+    PROB_MAP[p] = prob_mine;
+}
+
 }

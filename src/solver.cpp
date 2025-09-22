@@ -24,7 +24,6 @@ void initialize(){
     find_actions();
 }
 
-
 void find_actions(){  
     for (int row = 0; row < GRID_SIZE; row++){
         for (int col = 0; col < GRID_SIZE; col++){
@@ -50,31 +49,27 @@ void update_mine(pair<int,int> pos, multimap<int, vector<pair<int,int>>> &state,
         mines_marked.push_back({row,col});
     }
 
-    vector<pair<int, vector<pair<int,int>>>> to_add;
+    multimap<int, vector<pair<int,int>>> new_state;
 
-    for (auto itr = state.begin(); itr != state.end(); ) {
-        auto &vec = itr->second;
-        auto it = find(vec.begin(), vec.end(), pos);
+    for (auto &entry : state) {
+        int clue = entry.first;
+        auto cells = entry.second;
 
-        if (it != vec.end()) {
-            // make a fresh copy and erase the mine
-            auto new_vec = vec;
-            new_vec.erase(remove(new_vec.begin(), new_vec.end(), pos), new_vec.end());
-
-            int new_key = max(0, itr->first - 1); // avoid negative keys
-            itr = state.erase(itr);
-
-            // only reinsert if non-empty
-            if (!new_vec.empty()) {
-                to_add.emplace_back(new_key, move(new_vec));
-            }
+        // remove this mine from the cell list if present
+        auto it = find(cells.begin(), cells.end(), pos);
+        if (it != cells.end()) {
+            cells.erase(it);
+            clue = max(0, clue - 1); // decrement clue count
         }
-        else ++itr;
+
+        if (!cells.empty()) {
+            new_state.emplace(clue, move(cells));
+        }
     }
-    for (auto &vec : to_add) {
-        state.emplace(vec);
-    }
+
+    state.swap(new_state); // replace with cleaned state
 }
+
 
 void update_move(vector<pair<int,int>> to_remove, multimap<int, vector<pair<int,int>>> &state){
     for (auto &entry: state){
@@ -118,28 +113,6 @@ void find_moves(multimap<int, vector<pair<int,int>>> &state, bool simulate){
     }
     
     update_move(to_remove, state);
-}
-
-void make_random_move(){
-    vector<pair<int,int>> avail_moves;
-    vector<pair<int, int>> to_remove;
-
-    for (int i=0; i< GRID_SIZE; i++){
-        for (int j=0; j< GRID_SIZE; j++){
-            if (GRID_GIVEN[i][j] == UNREVEALED){
-                avail_moves.push_back({i,j});
-            }
-        }
-    }
-
-    if (!avail_moves.empty()) {
-        uniform_int_distribution<int> range(0, avail_moves.size()-1);       //finds random move in al available moves
-        int x = range(rng);
-        int row = avail_moves[x].first;
-        int col = avail_moves[x].second;
-        make_move(row, col);
-        to_remove.push_back({row,col});
-    }
 }
 
 void apply_logic(){
@@ -189,18 +162,16 @@ void solve(){
         //finds all possible actions when given the revealed positions
 
         printGridGiven();
-        printCells(CELLS);
         apply_logic();
         find_moves(CELLS, false);
         find_actions();                 //as more cells are revealed we update our knowledge
-        printCells(CELLS);
-
+        apply_logic();
+        
         if (no_moves_left(CELLS)){
             cout <<"no more moves! Simulating..."<<endl;
             run_simulation();
-        }
-
-        cout <<"mines found: "<<count_mines()<<endl;
+        } 
+        cout <<"Mines found: "<<count_mines()<<endl;
     }
 
     //check win condition
