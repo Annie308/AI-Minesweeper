@@ -44,12 +44,12 @@ void clear_node(Node* node){
     delete node;
 }
 
-vector<pair<int,int>> find_frontier(multimap<int, vector<pair<int,int>>> state){
+vector<pair<int,int>> find_frontier(multimap<int, vector<pair<int,int>>> &state){
     vector<pair<int,int>> frontier;
     for (auto entry: state){
-        if (entry.first < entry.second.size() && entry.first > 0){         //if we can't determine a move (ex. 1 = {(1,1), (2,1), (3,1)})
+        if (entry.first < entry.second.size() && entry.first > 0){         //if a move cannot be determined (ex. 1 = {(1,1), (2,1), (3,1)})
             for (auto p: entry.second){
-                if (GRID_GIVEN[p.first][p.second] != MINE){   //if not already marked
+                if (GRID_GIVEN[p.first][p.second] == UNREVEALED){   //if not already solved
                     frontier.push_back(make_pair(p.first,p.second));
                 }
             }
@@ -71,7 +71,7 @@ bool is_valid(multimap<int, vector<pair<int,int>>> state){
     return true;
 }
 
-//when given a pos on the frontier, search to find probability of mine by expanding
+//when given a pos on the frontier, search to find probability of mine by expanding by nodes to n depth
 void tree_sim(pair<int,int> cords, int &valid_mine, int &valid_safe, int depth){
 
     for (int assume_mine = 0; assume_mine <=1; assume_mine++){
@@ -177,42 +177,42 @@ void monte_carlo_sim(multimap<int, vector<pair<int,int>>> state,
 
 
 void run_simulation(){
-   vector<pair<int,int>> frontier = find_frontier(CELLS);
-PROB_MAP.clear();
+    vector<pair<int,int>> frontier = find_frontier(CELLS);
+    PROB_MAP.clear();
 
-for (auto &p : frontier) {
-    int valid_mine = 0;
-    int valid_safe = 0;
+    // Limit number of simulations based on size of frontier
+    int num_runs = max(50, 3000 / (int)pow(log(max(2, (int)frontier.size())), 3));
+    int depth = 15; 
+    cout << "RUNNING: " << num_runs << " SIMULATIONS PER CELL.\n"<<endl;
 
-    cout << "Simulating for (" << p.first << "," << p.second << ")" << endl;
+    for (auto &p : frontier) {
+        int valid_mine = 0;
+        int valid_safe = 0;
 
-    if (frontier.size() <= 12) {
-        // Small frontier → do exact tree search
-        int depth = 15;
-        tree_sim(p, valid_mine, valid_safe, depth);
-    } else {
-        int num_runs = max(50, 3000 / (int)pow(log(max(2, (int)frontier.size())), 3));
-        int depth = 25; 
-        cout << "Num of simulations: " << num_runs << endl;
+        cout << "Simulating for (" << p.first << "," << p.second << ") ...";
 
-        // Run multiple random rollouts
-        uniform_int_distribution<int> dist(0, 1);
+        if (frontier.size() <= 12) {
+            // Small frontier → do exact tree search
+            int depth = 15;
+            tree_sim(p, valid_mine, valid_safe, depth);
+        } else {
 
-        for (int i = 0; i < num_runs; i++) {
-            bool assume_mine = (dist(rng) == 1);
-            monte_carlo_sim(CELLS, p, assume_mine, valid_mine, valid_safe, depth);
+            // Simulate mine/safe 
+            uniform_int_distribution<int> dist(0, 1);
+
+            for (int i = 0; i < num_runs; i++) {
+                bool assume_mine = (dist(rng) == 1);
+                monte_carlo_sim(CELLS, p, assume_mine, valid_mine, valid_safe, depth);
+            }
         }
+
+        double prob_mine = 0.0;
+        if (valid_mine + valid_safe > 0) {
+            prob_mine = (double)valid_mine / (valid_mine + valid_safe);
+        }
+
+        cout << "Probability: "<< prob_mine * 100 << "%" << endl;
+
+        PROB_MAP[p] = prob_mine;
     }
-
-    double prob_mine = 0.0;
-    if (valid_mine + valid_safe > 0) {
-        prob_mine = (double)valid_mine / (valid_mine + valid_safe);
-    }
-
-    cout << "Probability of (" << p.first << "," << p.second 
-         << ") being a mine: " << prob_mine * 100 << "%" << endl;
-
-    PROB_MAP[p] = prob_mine;
-}
-
 }

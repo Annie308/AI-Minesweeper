@@ -21,7 +21,7 @@ namespace CELL_LABELS{
     }
 }
 
-extern const int GRID_SIZE;
+extern int GRID_SIZE;
 extern std::vector<std::vector<int>> GRID;
 extern std::vector<std::vector<int>> GRID_GIVEN;
 extern std::vector<std::vector<double>> PROB_GRID; 

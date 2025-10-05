@@ -7,9 +7,13 @@ using namespace CELL_LABELS;
 
 const int SCREEN_HEIGHT = 1200;
 const int SCREEN_WIDTH = 1200;
-const int TILE_SIZE = SCREEN_HEIGHT/GRID_SIZE;
-bool RUNNING = true;
+bool RUNNING = false;
 bool GAMEOVER = false;
+
+//default values
+int GRID_SIZE=9;
+int MINESNUM=10;
+int TILE_SIZE = SCREEN_HEIGHT/GRID_SIZE;
 
 class Tile{
 private:
@@ -35,6 +39,7 @@ public:
 
     void flag(){
         shape.setFillColor(sf::Color::Red);
+        text.setString(" ");
     }
 
     void explode(){
@@ -106,13 +111,51 @@ void run(){
         cerr<< "Failed to load font\n";
         return;
     }
+    /* ================= GETTING USER INPUT =============*/
+
+    bool first_press = true;
+    int grid_size;
+    int mines_num;
+
+    cout <<" ================ WELCOME TO MINESWEEPER ================ \n\n";
+    cout <<" | The game will start after you enter the grid size and number of mines. |\n\n";
+    cout << "| The AI will attempt to solve the game! |\n";
+
+    do{
+        cout <<"Enter grid size (min 5, max 30): ";
+        cin >> grid_size;
+
+    }while(!grid_size || grid_size <5 || grid_size >30);
+
+    GRID_SIZE = grid_size;
+    TILE_SIZE = SCREEN_HEIGHT/GRID_SIZE;
+    
+    // Reinitialize grids with new size
+    GRID.clear();
+    GRID_GIVEN.clear();
+    GRID.resize(GRID_SIZE, vector<int>(GRID_SIZE, UNREVEALED));
+    GRID_GIVEN.resize(GRID_SIZE, vector<int>(GRID_SIZE, UNREVEALED));
+
+    do{
+        cout <<"Enter number of mines (min 1, max "<< GRID_SIZE*GRID_SIZE -9 <<"): ";
+        cin >> mines_num;
+    }while(!mines_num || mines_num <1 || mines_num > GRID_SIZE*GRID_SIZE -9);
+
+    MINESNUM = mines_num;
+
+    TILE_SIZE = SCREEN_HEIGHT/GRID_SIZE;
+   
+    cout <<"\nGrid size: "<<GRID_SIZE<<"x"<<GRID_SIZE<<", Mines: "<<MINESNUM<<" Tile size: "<<TILE_SIZE<<endl;
+
+    cout <<"\nGame started! Click on a tile to make your first move.\n";
+
+    RUNNING = true;
+
+
+    /* ============= STARTING GAME ==================*/
 
     sf::RenderWindow window(sf::VideoMode(sf::Vector2u(SCREEN_WIDTH, SCREEN_HEIGHT)), "window");
     window.setFramerateLimit(30);
-
-
-    bool first_press = true;
-
      
     for (int row=0; row<GRID.size(); row++){
         for (int col=0; col<GRID[0].size(); col++){

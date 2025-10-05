@@ -5,15 +5,12 @@
 using namespace std;
 using namespace CELL_LABELS;
 
-const int GRID_SIZE = 16;
-int MINESNUM = 60;
 int MOVES =0;
 
 vector<vector<int>> GRID(GRID_SIZE, vector<int>(GRID_SIZE, UNREVEALED));         //-2 = empty, -1 = mines, otherwise (0-5) markers for mines
 vector<vector<int>> GRID_GIVEN(GRID_SIZE, vector<int>(GRID_SIZE, UNREVEALED));
 deque<pair<int,int>> blast_pos;
-map<pair<int,int>, int> pos_revealed;                        //positions that the ai can see
-uniform_int_distribution<int> dist(0,GRID_SIZE-1); 
+map<pair<int,int>, int> pos_revealed;                        //positions that the ai can see 
 
 //when given blasting centre, blast using bfs
 void blast(int row, int col){
@@ -37,7 +34,8 @@ void blast(int row, int col){
     }
 }
 
-void place_mines(){      
+void place_mines(){    
+    uniform_int_distribution<int> dist(0,GRID_SIZE-1);  
     int mines_placed =0;
 
     while (mines_placed < MINESNUM){
@@ -106,12 +104,6 @@ void initGame(int x, int y){
     place_mines();
     cleanUp();
     find_visible_cells();
-    for (int i=0; i< GRID_SIZE; i++){
-        for (int j=0; j< GRID_SIZE; j++){
-            cout << GRID[i][j] <<" ";
-        }
-        cout << endl;
-    }
 }
 
 //allows the ai to make a move and update the grid

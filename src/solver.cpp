@@ -137,7 +137,7 @@ void apply_logic(){
             int new_count = b_count - a_count;
 
             if (is_subset(a,b) && it->second.size() != a.size() && new_count >=0){   
-                for (auto &p: b){  //push back what you cant find
+                for (auto &p: b){  //push back what is left after removing a from b
                     if (find(a.begin(), a.end(), p) ==a.end()){
                         diff.push_back(p);
                     }
@@ -160,18 +160,27 @@ void apply_logic(){
 void solve(){
     if (count_mines() < MINESNUM){
         //finds all possible actions when given the revealed positions
-
-        printGridGiven();
         apply_logic();
         find_moves(CELLS, false);
-        find_actions();                 //as more cells are revealed we update our knowledge
+        find_actions();                 //update knowledge
         apply_logic();
         
-        if (no_moves_left(CELLS)){
-            cout <<"no more moves! Simulating..."<<endl;
+        if (no_moves_left(CELLS) && count_mines() < MINESNUM){   
+            cout <<"\n============== NO MORE MOVES! RUNNING SIMULATION ===============\n"<<endl;
             run_simulation();
+            if (!PROB_MAP.empty()){
+                auto min = min_element(PROB_MAP.begin(), PROB_MAP.end(),
+                    [](const auto &a, const auto &b) {
+                        return a.second < b.second;
+                    });
+                cout <<"MIN PROB: ("<<min->first.first<<","<<min->first.second<<") with prob "<<min->second<<endl;
+                cout <<"================ END SIMULATION ================="<<endl;
+                cout <<"MAKING MOVE AT MIN PROBABILITY CELL: "<< "("<<min->first.first<<","<<min->first.second<<")\n";
+                make_move(min->first.first, min->first.second);
+                update_move({min->first}, CELLS);
+            }
         } 
-        cout <<"Mines found: "<<count_mines()<<endl;
+        cout <<"MINES FOUND: "<<count_mines()<<endl;
     }
 
     //check win condition
